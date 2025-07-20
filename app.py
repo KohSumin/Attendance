@@ -31,13 +31,13 @@ if 'student_name' not in st.session_state:
     st.session_state.student_name = ""
 
 # --- 공통 헤더 ---
-st.title("🏫 비대면 출석 확인 앱")
+st.title("🏫 1-2 여름방학 출석 확인 앱")
 st.markdown("---")
 
 # --- 화면 전환 ---
 if not st.session_state.logged_in:
     # --- 학생 로그인 화면 ---
-    st.header("학생 출석 확인")
+    st.header("저 학교 왔어요!")
     student_name = st.text_input("이름을 입력하세요:")
 
     ip = get_public_ip()
@@ -48,7 +48,7 @@ if not st.session_state.logged_in:
         if not ip:
             st.error("IP 확인에 실패했습니다. 네트워크 상태를 확인하세요.")
         elif ip != ALLOWED_IP:
-            st.error("출석은 학교 와이파이에서만 가능합니다.")
+            st.error("출석은 학교 와이파이(jnedu_s)에서만 가능합니다.")
         elif student_name:
             now = datetime.datetime.now()
             today_date = now.strftime("%Y-%m-%d")
@@ -64,12 +64,12 @@ if not st.session_state.logged_in:
                 st.success(f"{student_name}님, {current_time}에 출석 처리되었습니다.")
                 st.experimental_rerun()
             else:
-                st.warning("이미 오늘 출석체크를 완료했습니다.")
+                st.warning("이미 오늘 출석 확인을 완료했습니다.")
         else:
-            st.warning("이름을 입력해주세요.")
+            st.warning("이름을 입력해 주세요.")
 else:
     # --- 출석 완료 후 학생 화면 ---
-    st.header(f"✅ {st.session_state.student_name}님, 환영합니다!")
+    st.header(f"✅ {st.session_state.student_name} 님, 환영합니다!")
     st.info("출석이 완료되었습니다. 이 창을 닫아도 됩니다.")
     if st.button("로그아웃"):
         st.session_state.logged_in = False
@@ -78,7 +78,7 @@ else:
 
 # --- 교사용 화면 ---
 st.markdown("---")
-st.header("교사용 대시보드")
+st.header("수민T 대시보드")
 
 if not attendance_df.empty:
     sorted_dates = sorted(attendance_df['날짜'].unique(), reverse=True)
