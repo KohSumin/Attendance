@@ -1,8 +1,19 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
 import os
+import requests  # <- IP 확인을 위한 라이브러리
+
+# 접속자의 공인 IP 확인 함수
+def get_public_ip():
+    try:
+        response = requests.get("https://api64.ipify.org?format=json", timeout=5)
+        return response.json().get("ip", None)
+    except:
+        return None
+
+# 허용된 IP 주소
+ALLOWED_IP = "210.95.79.86"
 
 # 데이터 파일 경로
 DATA_FILE = "attendance.csv"
@@ -29,8 +40,16 @@ if not st.session_state.logged_in:
     st.header("학생 출석 확인")
     student_name = st.text_input("이름을 입력하세요:")
 
+    ip = get_public_ip()
+    if ip:
+        st.markdown(f"📡 현재 접속 IP: `{ip}`")
+
     if st.button("출석 확인"):
-        if student_name:
+        if not ip:
+            st.error("IP 확인에 실패했습니다. 네트워크 상태를 확인하세요.")
+        elif ip != ALLOWED_IP:
+            st.error("출석은 학교 와이파이에서만 가능합니다.")
+        elif student_name:
             now = datetime.datetime.now()
             today_date = now.strftime("%Y-%m-%d")
             current_time = now.strftime("%H:%M:%S")
@@ -43,12 +62,11 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.student_name = student_name
                 st.success(f"{student_name}님, {current_time}에 출석 처리되었습니다.")
-                st.experimental_rerun() # 성공 후 바로 교사 화면으로 넘어가지 않도록 처리
+                st.experimental_rerun()
             else:
                 st.warning("이미 오늘 출석체크를 완료했습니다.")
         else:
             st.warning("이름을 입력해주세요.")
-
 else:
     # --- 출석 완료 후 학생 화면 ---
     st.header(f"✅ {st.session_state.student_name}님, 환영합니다!")
@@ -58,23 +76,19 @@ else:
         st.session_state.student_name = ""
         st.experimental_rerun()
 
-
 # --- 교사용 화면 ---
 st.markdown("---")
 st.header("교사용 대시보드")
 
 if not attendance_df.empty:
-    # 날짜 선택
     sorted_dates = sorted(attendance_df['날짜'].unique(), reverse=True)
     selected_date = st.selectbox("조회할 날짜를 선택하세요:", sorted_dates)
 
-    # 선택된 날짜의 출석 기록 필터링
     daily_attendance = attendance_df[attendance_df['날짜'] == selected_date]
 
     if not daily_attendance.empty:
         st.dataframe(daily_attendance.sort_values(by="출석 시간").reset_index(drop=True))
 
-        # CSV 다운로드
         csv = daily_attendance.to_csv(index=False).encode('utf-8-sig')
         st.download_button(
             label="CSV 파일로 다운로드",
@@ -84,16 +98,13 @@ if not attendance_df.empty:
         )
     else:
         st.info("해당 날짜의 출석 기록이 없습니다.")
-
 else:
     st.info("아직 출석 기록이 없습니다.")
 
-# 교사용 비밀번호 입력 (간단한 형태)
+# --- 교사용 인증 ---
 password = st.text_input("교사용 비밀번호를 입력하세요", type="password")
-if password == "teacher123": # 실제 앱에서는 더 안전한 인증 방식 사용 필요
+if password == "teacher123":
     st.success("교사 인증 완료")
-    # 교사만 볼 수 있는 추가 기능 구현 가능
 else:
     if password != "":
         st.error("비밀번호가 일치하지 않습니다.")
-
